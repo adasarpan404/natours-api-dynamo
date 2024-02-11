@@ -7,10 +7,10 @@ const {
 const express = require("express");
 const serverless = require("serverless-http");
 
-
 const app = express();
 
 const USERS_TABLE = process.env.USERS_TABLE;
+const TOURS_TABLE = process.env.TOURS_TABLE;
 const client = new DynamoDBClient();
 const dynamoDbClient = DynamoDBDocumentClient.from(client);
 
@@ -64,12 +64,35 @@ app.post("/users", async function (req, res) {
     res.status(500).json({ error: "Could not create user" });
   }
 });
-
+app.post("/tours", async function (req, res) {
+  const { userId, tourId, name } = req.body;
+  if (typeof userId !== "string") {
+    res.status(400).json({ error: '"userId" must be a string' });
+  } else if (typeof name !== "string") {
+    res.status(400).json({ error: '"name" must be a string' });
+  } else if (typeof tourId !== "string") {
+    res.status(400).json({ error: '"name" must be a string' });
+  }
+  const params = {
+    TableName: TOURS_TABLE,
+    Item: {
+      userId,
+      tourId,
+      name,
+    },
+  };
+  try {
+    await dynamoDbClient.send(new PutCommand(params));
+    res.json({ tourId, userId, name });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Could not create tour" });
+  }
+});
 app.use((req, res, next) => {
   return res.status(404).json({
     error: "Not Found",
   });
 });
-
 
 module.exports.handler = serverless(app);

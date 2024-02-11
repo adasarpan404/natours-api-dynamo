@@ -1,10 +1,11 @@
 org: adasarpan
 app: natours-api-dynamo
 service: natours-api-dynamo
-frameworkVersion: '3'
+frameworkVersion: "3"
 
 custom:
-  tableName: 'users-table-${sls:stage}'
+  userTableName: "user-table-${sls:stage}"
+  tourTableName: "tour-table-${sls:stage}"
 
 provider:
   name: aws
@@ -21,15 +22,17 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
           Resource:
-            - Fn::GetAtt: [ UsersTable, Arn ]
+            - Fn::GetAtt: [UsersTable, Arn]
+            - Fn::GetAtt: [ToursTable, Arn]
   environment:
-    USERS_TABLE: ${self:custom.tableName}
+    USERS_TABLE: ${self:custom.userTableName}
+    TOURS_TABLE: ${self:custom.tourTableName}
 
 functions:
   api:
     handler: index.handler
     events:
-      - httpApi: '*'
+      - httpApi: "*"
 
 resources:
   Resources:
@@ -43,4 +46,19 @@ resources:
           - AttributeName: userId
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
-        TableName: ${self:custom.tableName}
+        TableName: ${self:custom.userTableName}
+    ToursTable:
+      Type: AWS::DynamoDB::Table
+      Properties: # Correct indentation
+        AttributeDefinitions: # Correct indentation
+          - AttributeName: tourId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tourId
+            KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.tourTableName}
